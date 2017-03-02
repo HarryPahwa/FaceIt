@@ -46,6 +46,14 @@ struct FacialExpression
         }
     }
     
+    var sadder:FacialExpression {
+        return FacialExpression(eyes: self.eyes, eyeBrows: self.eyeBrows, mouth: self.mouth.sadderMouth())
+    }
+    
+    var happier:FacialExpression {
+        return FacialExpression(eyes: self.eyes, eyeBrows: self.eyeBrows, mouth: self.mouth.happierMouth())
+    }
+    
     var eyes: Eyes
     var eyeBrows: EyeBrows
     var mouth: Mouth
