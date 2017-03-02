@@ -8,11 +8,35 @@
 
 import UIKit
 
+@IBDesignable
 class FaceView: UIView {
     
+    @IBInspectable
+    var scale: CGFloat = 0.9 { didSet { setNeedsDisplay() } }
     
-    var scale: CGFloat = 0.9
-    var eyesOpen: Bool = false
+    @IBInspectable
+    var eyesOpen: Bool = false { didSet { setNeedsDisplay() } }
+    
+    @IBInspectable
+    var mouthCurvature: Double = 1.0 { didSet { setNeedsDisplay() } }
+    
+    @IBInspectable
+    var lineWidth: CGFloat = 5.0 { didSet { setNeedsDisplay() } }
+    
+    @IBInspectable
+    var color: UIColor = UIColor.blue { didSet { setNeedsDisplay() } }
+    
+    func changeScale(byReactingTo pinchRecognizer: UIPinchGestureRecognizer)
+    {
+        switch pinchRecognizer.state{
+        case .changed, .ended:
+            scale*=pinchRecognizer.scale
+            pinchRecognizer.scale=1
+            
+        default:
+            break
+        }
+    }
     
     private var skullCenter: CGPoint{
         return CGPoint(x: bounds.midX, y: bounds.midY)
@@ -45,14 +69,43 @@ class FaceView: UIView {
             path.move(to: CGPoint(x: eyeCenter.x - eyeRadius, y: eyeCenter.y))
             path.addLine(to: CGPoint(x: eyeCenter.x + eyeRadius, y: eyeCenter.y))
         }
+        
+        path.lineWidth=lineWidth
         return path
     }
     
+    private func pathForMouth() -> UIBezierPath
+    {
+        let mouthWidth=skullRadius/Ratios.skullRadiustoMouthWidth
+        let mouthHeight=skullRadius/Ratios.skullRadiustoMouthHeight
+        let mouthOffset=skullRadius/Ratios.skullRadiustoMouthOffset
+        
+        let mouthRect = CGRect (
+            x: skullCenter.x - mouthWidth / 2,
+            y: skullCenter.y + mouthOffset,
+            width: mouthWidth,
+            height: mouthHeight
+        )
+        
+        let start=CGPoint(x:mouthRect.minX, y: mouthRect.midY)
+        let end=CGPoint(x:mouthRect.maxX, y: mouthRect.midY)
+        let smileOffset=CGFloat(max(-1, min(mouthCurvature, 1))) * mouthRect.height
+        
+        let cp1=CGPoint(x: start.x + mouthRect.width/3, y: start.y+smileOffset)
+        let cp2=CGPoint(x: end.x - mouthRect.width/3, y: start.y+smileOffset)
+
+        
+        let path=UIBezierPath()
+        path.move(to: start)
+        path.addCurve(to: end, controlPoint1: cp1, controlPoint2: cp2)
+        path.lineWidth=lineWidth
+        return path
+    }
     
     private func pathForSkull() -> UIBezierPath
     {
         let path=UIBezierPath(arcCenter: skullCenter, radius: skullRadius, startAngle: 0, endAngle: 2*CGFloat.pi, clockwise: false)
-        path.lineWidth=5.0
+        path.lineWidth=lineWidth
         return path
     }
     
@@ -60,11 +113,13 @@ class FaceView: UIView {
         // Drawing code
         
         
-        UIColor.blue.set()
+        color.set()
         pathForSkull().stroke()
+        eyesOpen = !eyesOpen
         pathForEye(.left).stroke()
-        eyesOpen = true
+        eyesOpen = !eyesOpen
         pathForEye(.right).stroke()
+        pathForMouth().stroke()
     }
     
     private struct Ratios {
